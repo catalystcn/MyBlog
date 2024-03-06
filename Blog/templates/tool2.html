@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时微博热搜</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .container_hotnews {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #merge-form {
+            text-align: center;
+        }
+        .button {
+            margin-top: 10px;
+        }
+        #hot_search_content {
+            margin-top: 15px;
+            font-size: 16px;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('index') }}">主页</a>
+        <a href="{{ url_for('toolbox') }}">工具箱</a>
+    </div>
+    <div class="container">
+        <h1>🌈实时微博热搜</h1>
+        <!-- 显示更新时间 -->
+        <a id="update_time" class="container_hotnews" href="https://weibo.com/newlogin?tabtype=search">
+            <p>更新时间：{{ update_time }}</p>
+        </a>
+        <!-- 显示实时微博热搜内容 -->
+        <div id="hot_search_content" class="container_hotnews">
+            <pre id="hot-search-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        function fetchHotSearchContent() {
+            $.ajax({
+                url: '/get_hot_search_content',
+                type: 'GET',
+                success: function(data) {
+                    $('#hot-search-content').text(data.hot_search_content);
+                    $('#update_time').html('<p>上次更新时间：' + data.update_time + '</p>');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching hot search content:', error);
+                }
+            });
+        }
+
+        // Fetch content initially when the page loads
+        fetchHotSearchContent();
+
+        // Update content every 10 seconds
+        setInterval(fetchHotSearchContent, 10000); // 10 seconds
+    </script>
+</body>
+</html>

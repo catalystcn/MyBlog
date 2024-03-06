@@ -89,7 +89,7 @@ body {
 .tool-cards a:hover{
     background:#4CAF50;
     color: white;
-    transition:background-color 0.3s linear;
+    transition:background-color 0.2s linear;
 }
 
 .post-date {
@@ -125,8 +125,7 @@ body {
     background-color: #fff;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    width: 80%;
-    max-width: 600px;
+    width: 60%;
 }
 
 h1 {
@@ -423,7 +422,7 @@ input[type="file"] {
     background-color: #45a049;
 }
 
-pre { // 兼容多个浏览器
+.welcome { // 兼容多个浏览器
     white-space: pre-wrap;
     white-space: -moz-pre-wrap;
     white-space: -pre-wrap;
@@ -463,7 +462,35 @@ ul {
 .list-group-item:hover{
     color:white;
     background-color: #4CAF50;
-    transition: background-color 0.3s;
+    transition:background-color 0.2s linear;
 }
 
+.post-card{
+    color:black;
+    text-decoration: none;
+}
 
+.container_hotnews{
+    text-decoration:none;
+    color:inherit;
+    margin-top:30px;
+    margin-bottom:30px;
+    background-color: rgba(255, 255, 255, 0.85); /* Set a semi-transparent white background */
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(8px); /* Apply a blur effect to the container */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1); /* Add a subtle shadow effect */
+    transition: transform 0.3s ease; /* Add transition for smooth effect */
+}
+
+#hot-search-content{
+    max-height: 380px; /* Adjust the maximum height as needed */
+    width:95%;
+    overflow-y: auto; /* Enable vertical scrollbar when content overflows */
+}
+
+#update_time:hover{
+    background:#4CAF50;
+    color: white;
+    transition:background-color 0.2s linear;
+}

@@ -1,11 +1,18 @@
+import json
+
+import requests
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify, make_response
+from flask_mysqldb import MySQL
+from gevent import pywsgi
+import pymysql
+import markdown
+from datetime import datetime
+from PyPDF2 import PdfMerger
+from pathlib import Path
 import os
 import threading
-from datetime import datetime
-
-import markdown
-from PyPDF2 import PdfMerger
-import pymysql
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, make_response
+from io import BytesIO
+import datetime
 
 extensions = [
     'markdown.extensions.extra',
@@ -18,31 +25,34 @@ extensions = [
 app = Flask(__name__)
 app.secret_key = 'hello world'
 
+# # MySQL Configuration
+# app.config['MYSQL_HOST'] = 'localhost'
+# app.config['MYSQL_USER'] = 'root'
+# app.config['MYSQL_PASSWORD'] = 'a88103882'
+# app.config['MYSQL_DB'] = 'blog'
+# mysql = MySQL(app)
+
 conn = pymysql.connect(
     host='127.0.0.1',  # 主机名（或IP地址）
     port=3306,  # 端口号，默认为3306
-    user='user_ma',  # 用户名
+    user='root',  # 用户名
+    database='blog',
     password='a88103882',  # 密码
     charset='utf8mb4'  # 设置字符编码
 )
-
-
 # Index Page
 @app.route('/')
 def index():
     cur = conn.cursor()
-    cur.execute(
-        "SELECT id, title, content, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at FROM posts ORDER BY created_at DESC")
+    cur.execute("SELECT id, title, content, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at FROM posts ORDER BY created_at DESC")
     posts = cur.fetchall()
     cur.close()
     return render_template('index.html', posts=posts)
 
-
 # Render Markdown text
 @app.template_filter('md')
 def markdown_filter(text):
-    return markdown.markdown(text, extensions=extensions)
-
+    return markdown.markdown(text,extensions=extensions)
 
 # Blog Post Page
 @app.route('/post/<int:post_id>')
@@ -51,11 +61,10 @@ def post(post_id):
     cur.execute("SELECT * FROM posts WHERE id = %s", (post_id,))
     post = cur.fetchone()
     if post:
-        post_content = markdown.markdown(post[2], extensions=extensions)
+        post_content = markdown.markdown(post[2],extensions=extensions)
         return render_template('post.html', post=post, post_content=post_content)
     else:
         return render_template('404.html'), 404
-
 
 @app.route('/manage', methods=['GET', 'POST'])
 def manage():
@@ -85,12 +94,10 @@ def manage():
 @app.route('/manage_panel')
 def manage_panel():
     cur = conn.cursor()
-    cur.execute(
-        "SELECT id, title, content, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at FROM posts ORDER BY created_at DESC")
+    cur.execute("SELECT id, title, content, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS created_at FROM posts ORDER BY created_at DESC")
     posts = cur.fetchall()
     cur.close()
     return render_template('manage_panel.html', posts=posts)
-
 
 # ManagePost
 @app.route('/manage_post/<int:post_id>')
@@ -99,11 +106,10 @@ def manage_post(post_id):
     cur.execute("SELECT * FROM posts WHERE id = %s", (post_id,))
     post = cur.fetchone()
     if post:
-        post_content = markdown.markdown(post[2], extensions=extensions)
+        post_content = markdown.markdown(post[2],extensions=extensions)
         return render_template('manage_post.html', post=post, post_content=post_content)
     else:
         return render_template('404.html'), 404
-
 
 # Add Post
 @app.route('/add_post', methods=['GET', 'POST'])
@@ -111,14 +117,13 @@ def add_post():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        created_at = datetime.now()  # Get current datetime
+        created_at = datetime.datetime.now()  # Get current datetime
         cur = conn.cursor()
         cur.execute("INSERT INTO posts (title, content, created_at) VALUES (%s, %s, %s)", (title, content, created_at))
         conn.commit()
         # flash('Post added successfully', 'success')
         return redirect(url_for('manage_panel'))
     return render_template('add_post.html')
-
 
 # Delete Post
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
@@ -131,21 +136,18 @@ def delete_post(post_id):
         return redirect(url_for('manage_panel'))
     return 'Method Not Allowed', 405
 
-
-# Tool Box
+#Tool Box
 @app.route('/toolbox')
 def toolbox():
     # Dummy data for tool cards (replace with actual data)
     return render_template('toolbox.html')
 
-
-# Tool1
+#Tool1
 @app.route('/tool1')
 def tool1():
     return render_template('tool1.html')
 
-
-# merge PDF
+#merge PDF
 @app.route('/merge_pdf', methods=['POST'])
 def merge_pdf():
     if 'folder[]' not in request.files:
@@ -189,6 +191,57 @@ def download_merged_pdf():
 
     return response
 
+# 设置微博热搜接口和请求头
+url = 'https://weibo.com/ajax/side/hotSearch'
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+}
+Interval_time = 10  # 更新时间间隔，单位：秒
+
+# 获取实时微博热搜内容和更新时间
+def get_hot_search_data():
+    now_time = datetime.datetime.now().strftime('%F %T')
+    response = requests.get(url=url, headers=headers)
+    response_text = json.loads(response.text)
+    data = response_text['data']['realtime']
+    hotnews = []
+    for each in data:
+        hotnews.append("NO.{:<5}\t{}".format(int(each["rank"]) + 1, each["note"]))  # 使用format()函数对齐
+    hot_search_content = "\n\n".join(hotnews)
+    return hot_search_content, now_time
+
+# Add a new route to fetch hot search content
+@app.route('/get_hot_search_content')
+def get_hot_search_content():
+    hot_search_content, update_time = get_hot_search_data()
+    return jsonify({'hot_search_content': hot_search_content, 'update_time': update_time})
+
+# 渲染Tool2.html模板，并传递实时微博热搜内容
+@app.route('/tool2')
+def tool2():
+    hot_search_content, update_time = get_hot_search_data()
+    return render_template('Tool2.html', hot_search_content=hot_search_content, update_time=update_time)
+
+#Google Translate
+def Google_Translate(target,Text):
+    targetLang=target
+    sourceLang=Text
+    yourText=""
+    yourAPIKey=""
+    post_url = "https://translation.googleapis.com/language/translate/v2?target="+targetLang+"&source="+sourceLang+"&q="+yourText+"&key="+yourAPIKey
+    response = requests.get(url=post_url, headers=headers)
+
+#Tool3
+@app.route('/tool3',methods=['GET', 'POST'])
+def tool3():
+    if request.method == 'POST':
+        targetLang = request.form['targetLang']
+        yourText = request.form['yourText']
+        respond=Google_Translate(targetLang,yourText)
+    return render_template('tool3.html')
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    # server = pywsgi.WSGIServer(('0.0.0.0', 5000), app)
+    # server.serve_forever()
+    app.run(debug=True)
+

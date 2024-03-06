@@ -13,7 +13,7 @@
         <a href="{{ url_for('manage') }}" >管理系统入口</a>
     </div>
     <div class="container mt-5">
-        <pre >
+        <pre class="welcome">
  __      __          ___                                                __
 /\ \  __/\ \        /\_ \                                              /\ \__
 \ \ \/\ \ \ \     __\//\ \      ___     ___     ___ ___       __       \ \ ,_\    ___
@@ -35,13 +35,15 @@
 <!--        <h1>欢迎来到马宁文玮的Blog✏️</h1>-->
         <ul class="list-group">
             {% for post in posts %}
+            <a href="{{ url_for('post', post_id=post[0]) }}" class="post-card">
             <li class="list-group-item">
                 <div class="post-header">
-                    <h2 class="post-title"><a href="{{ url_for('post', post_id=post[0]) }}">{{ post[1] }}</a></h2>
+                    <h2 class="post-title">{{ post[1] }}</h2>
                     <p class="post-date">{{ post[3][:10] }}</p> <!-- Display only the date part -->
                 </div>
                 <p class="post-content">{{ post[2][:100] }}...</p>
             </li>
+            </a>
             <div class="greyLine"></div>
             {% endfor %}
         </ul>
